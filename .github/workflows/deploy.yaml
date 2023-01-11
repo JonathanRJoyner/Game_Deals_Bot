@@ -1,0 +1,25 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+    - name: Building Container
+      uses: appleboy/ssh-action@v0.1.6
+      with:
+        sync: true
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USERNAME }}
+        password: ${{ secrets.VPS_PASSWORD }}
+        script: |
+          cd ~/Game_Deals_Bot
+          git pull
+          cd ~
+          docker compose -d --build bot
+          docker system prune -f
