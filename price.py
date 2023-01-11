@@ -46,8 +46,9 @@ async def get_game_name_options(
         return ['Begin Typing']
     with Session() as session:
         stmt = f'''SELECT name FROM steam_apps
-            WHERE similarity(name, '{ctx.value}') > 0.4
-            ORDER BY similarity(name, '{ctx.value}') DESC;'''
+            WHERE name % '{ctx.value}'
+            ORDER BY name <-> '{ctx.value}'
+            LIMIT 20;'''
         results = session.execute(stmt).scalars().all()
     return results
 
@@ -58,7 +59,6 @@ async def get_game_appid(game_name: str) -> int:
         stmt = select(SteamApps.appid).where(SteamApps.name == game_name)
         result = session.execute(stmt).scalars().first()
     return result
-
 
 class Price(commands.Cog):
 
