@@ -5,6 +5,7 @@ from sqlalchemy import (
     String, 
     Boolean, 
     DateTime,
+    Float,
     JSON,
     create_engine
 )
@@ -275,6 +276,17 @@ class PriceAlerts(Base):
             session.add(alert)
             session.commit()
 
+class G2AData(Base):
+    __tablename__ = 'g2a'
+
+    id = Column(Integer, primary_key = True)
+    g2a_id = Column(BIGINT)
+    title = Column(String)
+    slug = Column(String)
+    minprice = Column(Float)
+    region = Column(String)
+    platform = Column(String)
+
 class SteamApps(Base):
     __tablename__ = 'steam_apps'
 
@@ -307,26 +319,40 @@ class PriceInfo:
         self.lowest_url = self.lowest.get('url', 'None')
 
         #Parsing Steam info
-        self.steam_data = steam_app_details[appid]['data']
+        self.steam_data = steam_app_details[str(appid)]['data']
         self.game_name = self.steam_data.get('name', 'None')
         self.image = self.steam_data.get('header_image')
         self.metacritic = self.steam_data.get('metacritic', {}).get('score', 'None')
+
+    def _key_field(self) -> discord.EmbedField:
+        with Session() as session:
+            result = session.query(G2AData).filter(
+                (G2AData.title.like(f'%{self.game_name}%'))
+                &(G2AData.region == 'GLOBAL')
+                &(G2AData.platform == 'Steam')
+            ).first()
+        print(result)
+        if result:
+            url = f'https://www.g2a.com{result.slug}?gtag=08045ab515'
+            price = '${:.2f}'.format(result.minprice)
+            price_str = f'`{price}` at [G2A]({url})'
+            return embed_listed_field('Key Price', price_str)
+        else:
+            return None
     
     def info_embed(self) -> discord.Embed:
         embed = discord.Embed(title = self.game_name)
-        current_str = f"`{self.price}({self.price_cut})` at ({self.price_store})[{self.price_url}]"
-        lowest_str = f"`{self.lowest_price}({self.lowest_cut})` at ({self.lowest_store})[{self.lowest_url}]"
+        current_str = f"`{self.price}({self.price_cut})` at [{self.price_store}]({self.price_url})"
+        lowest_str = f"`{self.lowest_price}({self.lowest_cut})` at [{self.lowest_store}]({self.lowest_url})"
+        key_field = self._key_field()
         price_info = {
             'Current Price': current_str,
             'Lowest Price': lowest_str
         }
-        embed.append_field(embed_listed_field('Store Prices', price_info))
+        embed.append_field(embed_listed_field('Store Price', price_info))
+        if key_field:
+            embed.append_field(key_field)
+        embed.append_field(embed_cta())
         if self.image:
             embed.set_image(url = self.image)
         return embed
-        
-
-
-
-
-

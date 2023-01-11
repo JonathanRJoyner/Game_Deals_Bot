@@ -42,10 +42,11 @@ async def get_game_name_options(
 ) -> list[discord.OptionChoice]:
     '''Gets all of the matching game names from the steam app table. This is 
     used to autocomplete the options when users search for game prices.'''
+    if not ctx.value:
+        return ['Begin Typing']
     with Session() as session:
         stmt = select(SteamApps.name).where(SteamApps.name.like(f'%{ctx.value}%'))
         results = session.execute(stmt).scalars().all()
-    print(results)
     return results
 
 async def get_game_appid(game_name: str) -> int:
@@ -72,10 +73,11 @@ class Price(commands.Cog):
     )
     async def lookup(self, ctx: discord.ApplicationContext, game_name: str):
         '''Gives price information on a game.'''
+        await ctx.response.defer()
         appid = await get_game_appid(game_name)
         steam_app_details = await fetch_steam_app_details(appid)
         itad_app_details = await fetch_itad_game_overview(appid)
-        embed = PriceInfo(itad_app_details, steam_app_details, appid)
+        embed = PriceInfo(itad_app_details, steam_app_details, appid).info_embed()
         await ctx.respond(embed = embed)
 
 def setup(bot):
