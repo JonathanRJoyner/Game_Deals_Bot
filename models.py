@@ -331,7 +331,6 @@ class PriceInfo:
                 &(G2AData.region == 'GLOBAL')
                 &(G2AData.platform == 'Steam')
             ).first()
-        print(result)
         if result:
             url = f'https://www.g2a.com{result.slug}?gtag=08045ab515'
             price = '${:.2f}'.format(result.minprice)

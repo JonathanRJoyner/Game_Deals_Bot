@@ -45,7 +45,9 @@ async def get_game_name_options(
     if not ctx.value:
         return ['Begin Typing']
     with Session() as session:
-        stmt = select(SteamApps.name).where(SteamApps.name.like(f'%{ctx.value}%'))
+        stmt = f'''SELECT name FROM steam_apps
+            WHERE similarity(name, '{ctx.value}') > 0.4
+            ORDER BY similarity(name, '{ctx.value}') DESC;'''
         results = session.execute(stmt).scalars().all()
     return results
 
