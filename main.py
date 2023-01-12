@@ -6,9 +6,9 @@ from bot import bot, DISCORD_TOKEN
 
 
 alert_tasks = [
-    freetogame_alert,
-    gamerpower_alert,
-    gamepass_alert
+    #freetogame_alert,
+    #gamerpower_alert,
+    #gamepass_alert
 ]
 
 @bot.event

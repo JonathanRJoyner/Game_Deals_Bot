@@ -15,7 +15,6 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 from datetime import datetime
 import os
 from typing import Union
-import json
 
 CONNECTION_STRING = os.getenv('CONNECTION_STRING')
 
@@ -277,12 +276,16 @@ class PriceAlerts(Base):
     channel = Column(BIGINT)
     mentions = Column(JSON)
     price = Column(Integer)
-    game_plain = Column(Integer)    
+    game_plain = Column(String)
+    game_name = Column(String)
+    image_url = Column(String)    
     creation_time = Column(DateTime)
 
     @staticmethod
     def add_alert(
-        ctx: discord.ApplicationContext,
+        ctx: discord.Interaction,
+        game_name: str,
+        image_url: str,
         price: int,
         game_plain: str,
         mentions: list[int] = None
@@ -292,8 +295,10 @@ class PriceAlerts(Base):
         alert = PriceAlerts(
             user = ctx.user.id,
             server = ctx.guild.id,
-            channel = ctx.channel.id,
+            channel = ctx.channel_id,
             price = price,
+            game_name = game_name,
+            image_url = image_url,
             game_plain = game_plain,
             creation_time = datetime.now(),
             mentions = mentions
@@ -320,64 +325,3 @@ class SteamApps(Base):
     name = Column(String)
 
 Base.metadata.create_all(bind = engine)
-
-
-#Non-table models
-class PriceInfo:
-
-    def __init__(
-        self, 
-        itad_overview: json, 
-        steam_app_details: json, 
-        appid: int, 
-    ):
-        #Parsing ITAD info
-        self.itad_data = itad_overview
-        self.current = self.itad_data.get('price', {})
-        self.lowest = self.itad_data.get('lowest', {})
-        self.price = self.current.get('price_formatted', 'None')
-        self.price_cut = f"-{self.current.get('cut', '0')}%"
-        self.price_store = self.current.get('store', 'None')
-        self.price_url = self.current.get('url', 'None')
-        self.lowest_price = self.lowest.get('price_formatted', 'None')
-        self.lowest_cut = f"-{self.lowest.get('cut', '0')}%"
-        self.lowest_store = self.lowest.get('store', 'None')
-        self.lowest_url = self.lowest.get('url', 'None')
-
-        #Parsing Steam info
-        self.steam_data = steam_app_details[str(appid)]['data']
-        self.game_name = self.steam_data.get('name', 'None')
-        self.image = self.steam_data.get('header_image')
-        self.metacritic = self.steam_data.get('metacritic', {}).get('score', 'None')
-
-    def _key_field(self) -> discord.EmbedField:
-        with Session() as session:
-            result = session.query(G2AData).filter(
-                (G2AData.title.like(f'%{self.game_name}%'))
-                &(G2AData.region == 'GLOBAL')
-                &(G2AData.platform == 'Steam')
-            ).first()
-        if result:
-            url = f'https://www.g2a.com{result.slug}?gtag=08045ab515'
-            price = '${:.2f}'.format(result.minprice)
-            price_str = f'`{price}` at [G2A]({url})'
-            return embed_listed_field('Key Price', price_str)
-        else:
-            return None
-    
-    def info_embed(self) -> discord.Embed:
-        embed = discord.Embed(title = self.game_name)
-        current_str = f"`{self.price}({self.price_cut})` at [{self.price_store}]({self.price_url})"
-        lowest_str = f"`{self.lowest_price}({self.lowest_cut})` at [{self.lowest_store}]({self.lowest_url})"
-        key_field = self._key_field()
-        price_info = {
-            'Current Price': current_str,
-            'Lowest Price': lowest_str
-        }
-        embed.append_field(embed_listed_field('Store Price', price_info))
-        if key_field:
-            embed.append_field(key_field)
-        embed.append_field(embed_cta())
-        if self.image:
-            embed.set_image(url = self.image)
-        return embed
