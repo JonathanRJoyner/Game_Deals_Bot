@@ -7,6 +7,7 @@ from sqlalchemy import (
     DateTime,
     Float,
     JSON,
+    select,
     create_engine
 )
 import discord
@@ -103,6 +104,15 @@ class GiveawayAlerts(Base):
     creation_time = Column(DateTime, default = datetime.now())
 
     @staticmethod
+    def get_alerts(server: int) -> list:
+        '''Gets all active alerts for a server.'''
+        with Session() as session:
+            stmt = select(GiveawayAlerts).where(GiveawayAlerts.server == server)
+            results = session.execute(stmt).scalars().all()
+        return results
+
+
+    @staticmethod
     def add_alert(
         ctx: discord.ApplicationContext, 
         mentions: list[int] = None
@@ -129,6 +139,14 @@ class FreeToPlayAlerts(Base):
     channel = Column(BIGINT)
     mentions = Column(JSON)    
     creation_time = Column(DateTime)
+
+    @staticmethod
+    def get_alerts(server: int) -> list:
+        '''Gets all active alerts for a server.'''
+        with Session() as session:
+            stmt = select(FreeToPlayAlerts).where(FreeToPlayAlerts.server == server)
+            results = session.execute(stmt).scalars().all()
+        return results
 
     @staticmethod
     def add_alert(
@@ -225,6 +243,14 @@ class GamePassAlerts(Base):
     creation_time = Column(DateTime)
 
     @staticmethod
+    def get_alerts(server: int) -> list:
+        '''Gets all active alerts for a server.'''
+        with Session() as session:
+            stmt = select(GamePassAlerts).where(GamePassAlerts.server == server)
+            results = session.execute(stmt).scalars().all()
+        return results
+
+    @staticmethod
     def add_alert(
         ctx: discord.ApplicationContext, 
         mentions: list[int] = None
@@ -306,7 +332,7 @@ class PriceInfo:
         appid: int, 
     ):
         #Parsing ITAD info
-        self.itad_data = itad_overview['data'][f'app/{appid}']
+        self.itad_data = itad_overview
         self.current = self.itad_data.get('price', {})
         self.lowest = self.itad_data.get('lowest', {})
         self.price = self.current.get('price_formatted', 'None')

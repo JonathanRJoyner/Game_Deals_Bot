@@ -1,4 +1,4 @@
-from models import GiveawayAlerts, FreeToPlayAlerts, GamePassAlerts
+from models import GiveawayAlerts, FreeToPlayAlerts, GamePassAlerts, Session
 import discord
 from discord.commands import option
 from alerts import freetogame_alert, gamerpower_alert, gamepass_alert, delete_server_alerts
@@ -48,7 +48,7 @@ async def alert(ctx: discord.ApplicationContext):
         'Delete Giveaway Alerts'
     ]
 )
-async def delete_alert(ctx: discord.ApplicationContext, type: str):
+async def delete_alerts(ctx: discord.ApplicationContext, type: str):
     '''Delete active alerts in your server.'''
     await ctx.respond(f'All {type} deleted.')
     if 'Giveaway' in type:
@@ -59,6 +59,25 @@ async def delete_alert(ctx: discord.ApplicationContext, type: str):
         delete_server_alerts(ctx.guild.id, FreeToPlayAlerts)
     else:
         await ctx.followup.send('There was an error. Check the support server.')
+
+@bot.slash_command()
+async def check_alerts(ctx: discord.ApplicationContext):
+    '''See all active alerts on your server.'''
+    await ctx.response.defer(ephemeral = True)
+    alerts = ''
+    giveaway_alerts = GiveawayAlerts.get_alerts(ctx.guild.id)
+    for item in giveaway_alerts:
+        channel = await bot.fetch_channel(item.channel)
+        alerts += f'Giveaway Alert in {channel.name}\n'
+    freetoplay_alerts = FreeToPlayAlerts.get_alerts(ctx.guild.id)
+    for item in freetoplay_alerts:
+        channel = await bot.fetch_channel(item.channel)
+        alerts += f'Free to Play Alert in {channel.name}\n'
+    gamepass_alerts = GamePassAlerts.get_alerts(ctx.guild.id)
+    for item in gamepass_alerts:
+        channel = await bot.fetch_channel(item.channel)
+        alerts += f'Game Pass Alert in {channel.name}\n'
+    await ctx.respond(alerts or 'No alerts set.', ephemeral = True)
 
 bot.load_extension('price')
 bot.add_application_command(giveaway)
