@@ -7,6 +7,8 @@ import discord
 from sqlalchemy import select
 from models import Session, SteamApps, PriceAlerts, G2AData, embed_listed_field, embed_cta
 import traceback
+from alerts import delete_server_alerts
+import json
 
 ITAD_API = os.getenv('ITAD_API')
 
@@ -234,11 +236,59 @@ class CreateAlertModal(discord.ui.Modal):
                 image_url = self.info.image, 
                 price = price, 
                 game_plain = self.info.game_plain
-            )            
+            )
+            response = f'Price Alert for `{self.info.game_name}` created.'
+            await interaction.response.send_message(response)
         except ValueError:
             response = f'Target price must be a number. You input `{price}`.'
             await interaction.response.send_message(response, ephemeral = True)
 
+class PriceAlertDropdown(discord.ui.Select):
+    '''A dropdown with price alert options for the users server. Chosen option
+    will be deleted.'''
+    
+    
+    def __init__(self, alerts: list[PriceAlerts]):
+        
+        #This creates a list of values along with options
+        #to avoid duplicate options.
+        options = []
+        values = []
+        for alert in alerts:
+            label = f'{alert.game_name} under ${alert.price}'
+            value = {
+                'channel': alert.channel, 
+                'game_name': alert.game_name[0:10],
+                'price': alert.price
+            }
+            value = json.dumps(value)
+            if value not in values:
+                values.append(value)
+                option = discord.SelectOption(label = label, value = value)
+                options.append(option)
+            else:
+                continue
+        
+        super().__init__(
+            placeholder = 'Choose an alert to delete.', 
+            min_values = 1,
+            options = options
+        )
+
+        async def callback(self, interaction: discord.Interaction):
+            alert = json.loads(self.values[0])
+            game_name = alert['game_name']
+            channel = alert['channel']
+            price = alert['price']
+            delete_server_alerts(
+                interaction.guild.id, 
+                PriceAlerts, 
+                game_name = game_name,
+                channel = channel,
+                price = price
+            )
+            response = f'Deleted alert for `{game_name}` in <#{channel}>'
+            await interaction.response.send_message(response)
 
 
 def setup(bot):

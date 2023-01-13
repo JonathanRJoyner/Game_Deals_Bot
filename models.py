@@ -282,6 +282,14 @@ class PriceAlerts(Base):
     creation_time = Column(DateTime)
 
     @staticmethod
+    def get_alerts(server: int) -> list:
+        '''Gets all active alerts for a server.'''
+        with Session() as session:
+            stmt = select(PriceAlerts).where(PriceAlerts.server == server)
+            results = session.execute(stmt).scalars().all()
+        return results
+
+    @staticmethod
     def add_alert(
         ctx: discord.Interaction,
         game_name: str,

@@ -1,7 +1,16 @@
 
 from discord.ext import tasks
 from sqlalchemy import select, update, delete
-from models import Session, GamerPowerData, GiveawayAlerts, FreeToPlayAlerts, FreeToGameData, GamePassAlerts, GamePassData
+from models import (
+    Session, 
+    GamerPowerData, 
+    GiveawayAlerts, 
+    FreeToPlayAlerts, 
+    FreeToGameData, 
+    GamePassAlerts, 
+    GamePassData, 
+    PriceAlerts
+)
 from typing import Union
 
 from bot import bot
@@ -9,19 +18,34 @@ from bot import bot
 alert_tables = [
     FreeToPlayAlerts,
     GiveawayAlerts,
-    GamePassAlerts
+    GamePassAlerts,
+    PriceAlerts
 ]
 
 def delete_server_alerts(
     server_id: int, 
-    alert_type: Union[FreeToPlayAlerts, GiveawayAlerts, GamePassAlerts]
+    alert_type: Union[FreeToPlayAlerts, GiveawayAlerts, GamePassAlerts, PriceAlerts],
+    channel: int = None,
+    game_name: str = None,
+    price: int = None
 ) -> None:
     '''Deletes all active alerts given a server id and alert table type.
     This is the primary way for users to delete active alerts.'''
-    with Session() as session:
-        stmt = delete(alert_type).where(alert_type.server == server_id)
-        session.execute(stmt)
-        session.commit()
+    if type(alert_type) == PriceAlerts:
+        with Session() as session:
+            stmt = delete(alert_type).where(
+                (alert_type.server == server_id)
+                &(alert_type.channel == channel)
+                &(alert_type.like(f'{game_name}%'))
+                &(alert_type.price == price)
+            )
+            session.execute(stmt)
+            session.commit()
+    else:
+        with Session() as session:
+            stmt = delete(alert_type).where(alert_type.server == server_id)
+            session.execute(stmt)
+            session.commit()
 
 def delete_inactive_channel(channel_id: int) -> None:
     '''Deletes a given channel from all of the alert tables. This is used to 
