@@ -1,14 +1,10 @@
 import aiohttp
 from typing import Union
 import os
-from discord.ext import commands
-from discord.commands import SlashCommandGroup
 import discord
 from sqlalchemy import select
-from models import Session, SteamApps, PriceAlerts, G2AData, embed_listed_field, embed_cta
+from models import Session, SteamApps, G2AData, embed_listed_field, embed_cta, PriceAlerts, alert_color
 import traceback
-from alerts import delete_server_alerts
-import json
 
 ITAD_API = os.getenv('ITAD_API')
 
@@ -97,44 +93,48 @@ async def get_game_appid(game_name: str) -> int:
         result = session.execute(stmt).scalars().first()
     return result
 
-class Price(commands.Cog):
+async def price_lookup_response(ctx: discord.ApplicationContext, game_name: str):
+    from views import CreateAlertView
+    await ctx.response.defer()
+    game_name = get_closest_names(game_name)[0]
+    try:
+        game_plain = await fetch_itad_game_plain(game_name)            
+        info = await PriceInfo.create_one(game_plain)
+        embed = info.info_embed()
+        view = CreateAlertView(info)
+        await ctx.respond(embed = embed, view = view)
+    except:
+        print(traceback.format_exc())
+        response = (
+            'It looks like there was an issue getting that games price '
+            'data. The error has been sent to the support server.'
+        )
+        await ctx.respond(response)
 
-    def __init__(self, bot_: discord.Bot):
-        self.bot = bot_
+async def get_itad_overviews(plains: list[str]) -> dict:
+    '''Creates a dict where all input game plains are keys. Used to check
+    active price alerts.'''
+    all_overviews = {}
+    for i in range(0, len(plains), 20):
+        overviews = await fetch_itad_overview(plains[i:i+20])
+        all_overviews.update(overviews)
+    return all_overviews
 
-    price = SlashCommandGroup("price", "Commands for game prices.")
-
-    @price.command()
-    @discord.option(
-        name = 'game_name',
-        autocomplete = game_autocomplete_options,
-        description = 'Choose a game title.'
-    )
-    async def lookup(self, ctx: discord.ApplicationContext, game_name: str):
-        '''Gives price information on a game.'''
-        await ctx.response.defer()
-        game_name = get_closest_names(game_name)[0]
-        try:
-            game_plain = await fetch_itad_game_plain(game_name)            
-            info = await PriceInfo.create_one(game_plain)
-            embed = info.info_embed()
-            view = CreateAlertView(info)
-            await ctx.respond(embed = embed, view = view)
-        except:
-            print(traceback.format_exc())
-            response = (
-                'It looks like there was an issue getting that games price '
-                'data. The error has been sent to the support server.'
-            )
-            await ctx.respond(response)
+def price_comparison(alert: PriceAlerts, info: dict) -> bool:
+    '''Checks the current game price against the setpoint price for an alert.'''
+    info = info[alert.game_plain]
+    if alert.price > info['price']['price']:
+        return True
+    else:
+        return False
 
 class PriceInfo:
 
     def __init__(
         self, 
         game_plain: str, 
-        itad_overview,
-        itad_info
+        itad_overview: dict,
+        itad_info: dict
     ):
         self.game_plain = game_plain
 
@@ -199,97 +199,11 @@ class PriceInfo:
             embed.set_image(url = self.image)
         return embed
 
-class CreateAlertView(discord.ui.View):
-    def __init__(self, info: PriceInfo):
-        super().__init__()
-        self.info = info
-    
-    @discord.ui.button(label = 'Create Alert', style = discord.ButtonStyle.red)
-    async def alert_button(
-        self, 
-        button: discord.ui.Button, 
-        interaction: discord.Interaction
-    ):
-        modal = CreateAlertModal(self.info)
-        await interaction.response.send_modal(modal = modal)
-
-class CreateAlertModal(discord.ui.Modal):
-    def __init__(self, info: PriceInfo):
-        super().__init__(
-            discord.ui.InputText(
-                label = 'Target Price',
-                placeholder = '$20',
-                min_length = 1,
-                max_length = 4
-            ),
-            title = 'Price Alert'
-        )
-        self.info = info
-    
-    async def callback(self, interaction: discord.Interaction):
-        price = self.children[0].value.replace('$', '')
-        try:
-            price = int(float(price))
-            PriceAlerts.add_alert(
-                interaction, 
-                game_name = self.info.game_name, 
-                image_url = self.info.image, 
-                price = price, 
-                game_plain = self.info.game_plain
-            )
-            response = f'Price Alert for `{self.info.game_name}` created.'
-            await interaction.response.send_message(response)
-        except ValueError:
-            response = f'Target price must be a number. You input `{price}`.'
-            await interaction.response.send_message(response, ephemeral = True)
-
-class PriceAlertDropdown(discord.ui.Select):
-    '''A dropdown with price alert options for the users server. Chosen option
-    will be deleted.'''
-    
-    
-    def __init__(self, alerts: list[PriceAlerts]):
-        
-        #This creates a list of values along with options
-        #to avoid duplicate options.
-        options = []
-        values = []
-        for alert in alerts:
-            label = f'{alert.game_name} under ${alert.price}'
-            value = {
-                'channel': alert.channel, 
-                'game_name': alert.game_name[0:10],
-                'price': alert.price
-            }
-            value = json.dumps(value)
-            if value not in values:
-                values.append(value)
-                option = discord.SelectOption(label = label, value = value)
-                options.append(option)
-            else:
-                continue
-        
-        super().__init__(
-            placeholder = 'Choose an alert to delete.', 
-            min_values = 1,
-            options = options
-        )
-
-        async def callback(self, interaction: discord.Interaction):
-            alert = json.loads(self.values[0])
-            game_name = alert['game_name']
-            channel = alert['channel']
-            price = alert['price']
-            delete_server_alerts(
-                interaction.guild.id, 
-                PriceAlerts, 
-                game_name = game_name,
-                channel = channel,
-                price = price
-            )
-            response = f'Deleted alert for `{game_name}` in <#{channel}>'
-            await interaction.response.send_message(response)
-
-
-def setup(bot):
-    bot.add_cog(Price(bot))
+    @staticmethod
+    def alert_embed(alert: PriceAlerts, overview: dict) -> discord.Embed:
+        self = PriceInfo(alert.game_plain, overview, {})
+        embed = self.info_embed()
+        embed.title = f'{alert.game_name} under ${alert.price}'
+        embed.set_image(url = alert.image_url)
+        embed.color = alert_color
+        return embed

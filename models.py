@@ -8,6 +8,7 @@ from sqlalchemy import (
     Float,
     JSON,
     select,
+    delete,
     create_engine
 )
 import discord
@@ -21,6 +22,8 @@ CONNECTION_STRING = os.getenv('CONNECTION_STRING')
 engine = create_engine(CONNECTION_STRING)
 Base = declarative_base()
 Session = sessionmaker(engine)
+
+alert_color = discord.Color.red()
 
 def embed_listed_field(name: str, values: Union[dict, str]) -> discord.EmbedField:
     '''Creates a easily readable and clean formatted field for discord embeds.'''
@@ -90,6 +93,7 @@ class GamerPowerData(Base):
         embed.append_field(embed_listed_field('Description', self.description))
         embed.append_field(embed_cta())
         embed.set_image(url = self.image)
+        embed.color = alert_color
         return embed
 
 class GiveawayAlerts(Base):
@@ -196,6 +200,7 @@ class FreeToGameData(Base):
         embed.append_field(embed_listed_field('Description', self.short_description))
         embed.append_field(embed_cta())
         embed.set_image(url = self.thumbnail)
+        embed.color = alert_color
         return embed
 
 #Game Pass tables
@@ -229,6 +234,7 @@ class GamePassData(Base):
         embed.append_field(embed_listed_field('Description', self.description))
         embed.append_field(embed_cta())
         embed.set_image(url = self.image_url)
+        embed.color = alert_color
         return embed
 
 class GamePassAlerts(Base):
@@ -314,6 +320,20 @@ class PriceAlerts(Base):
         with Session() as session:
             session.add(alert)
             session.commit()
+    
+    @staticmethod
+    async def delete_alert(alert) -> None:
+        with Session() as session:
+            stmt = delete(PriceAlerts).where(PriceAlerts.id == alert.id)
+            session.execute(stmt)
+            session.commit()
+
+    @staticmethod
+    async def delete_alert_dropdown(ctx: discord.ApplicationContext):
+        from views import PriceAlertDropdown
+        dropdown = PriceAlertDropdown(PriceAlerts.get_alerts(ctx.guild.id))
+        view = discord.ui.View(dropdown)
+        await ctx.respond(view = view)
 
 class G2AData(Base):
     __tablename__ = 'g2a'
@@ -331,5 +351,20 @@ class SteamApps(Base):
 
     appid = Column(Integer, primary_key = True)
     name = Column(String)
+
+class Logs(Base):
+    __tablename__ = 'logs'
+
+    id = Column(Integer, primary_key = True)
+    update = Column(String)
+    status = Column(String)
+    time = Column(DateTime)
+
+    @staticmethod
+    def latest_str():
+        with Session() as session:
+            stmt = select(Logs).order_by(Logs.id.desc()).limit(10)
+            results = session.execute(stmt).scalars().all()
+        return '\n'.join([f'{log.update} | {log.time} | {log.status}' for log in results])
 
 Base.metadata.create_all(bind = engine)

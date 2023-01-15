@@ -14,6 +14,7 @@ from models import (
 from typing import Union
 
 from bot import bot
+from price import price_comparison, get_itad_overviews, PriceInfo
 
 alert_tables = [
     FreeToPlayAlerts,
@@ -94,6 +95,24 @@ def update_alert_status(table) -> None:
         stmt = update(table).values(alerted = True)
         session.execute(stmt)
         session.commit()
+
+async def send_price_alert(alert: PriceAlerts, overviews: dict) -> None:
+    embed = PriceInfo.alert_embed(alert, overviews[alert.game_plain])
+    channel = await bot.fetch_channel(alert.channel)
+    await channel.send(embed = embed)
+
+@tasks.loop(hours = 4)
+async def price_alert():
+    with Session() as session:
+        alerts = session.execute(select(PriceAlerts)).scalars().all()
+    plains = list(set([alert.game_plain for alert in alerts]))
+    overviews = await get_itad_overviews(plains)
+    for item in alerts:
+        if price_comparison(item, overviews):
+            await send_price_alert(item, overviews)
+            await PriceAlerts.delete_alert(item)
+        else:
+            continue
 
 @tasks.loop(minutes = 30)
 async def gamerpower_alert() -> None:
