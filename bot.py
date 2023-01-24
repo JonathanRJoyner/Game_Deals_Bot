@@ -9,3 +9,5 @@ else:
 
 intents = discord.Intents.default()
 bot = discord.Bot(debug_guilds=DEBUG_GUILD, intents=intents)
+bot.stream_channel = os.getenv("DISCORD_STREAMING_CHANNEL")
+bot.exception_channel = os.getenv("DISCORD_EXCEPTION_CHANNEL")

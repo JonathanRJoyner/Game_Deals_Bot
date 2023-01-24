@@ -1,6 +1,10 @@
-from models import GiveawayAlerts, FreeToPlayAlerts, GamePassAlerts, PriceAlerts, Logs
 import discord
 from discord.commands import option
+from discord.ext import commands
+
+from wrappers import command_streaming
+from price import game_autocomplete_options, price_lookup_response
+from bot import bot, DISCORD_TOKEN
 from alerts import (
     freetogame_alert,
     gamerpower_alert,
@@ -8,11 +12,7 @@ from alerts import (
     delete_server_alerts,
     price_alert,
 )
-from bot import bot, DISCORD_TOKEN
-from price import game_autocomplete_options, price_lookup_response
-from discord.ext import commands
-from models import Session
-
+from models import GiveawayAlerts, FreeToPlayAlerts, GamePassAlerts, PriceAlerts, Logs
 
 alert_tasks = [freetogame_alert, gamerpower_alert, gamepass_alert, price_alert]
 
@@ -27,6 +27,7 @@ create = discord.SlashCommandGroup("create", "Alert creation commands")
 
 
 @create.command()
+@command_streaming()
 async def giveaway_alert(ctx: discord.ApplicationContext):
     """Create a Giveaway alert."""
     GiveawayAlerts.add_alert(ctx)
@@ -34,6 +35,7 @@ async def giveaway_alert(ctx: discord.ApplicationContext):
 
 
 @create.command()
+@command_streaming()
 async def f2p_alert(ctx: discord.ApplicationContext):
     """Create a free to play alert."""
     FreeToPlayAlerts.add_alert(ctx)
@@ -41,6 +43,7 @@ async def f2p_alert(ctx: discord.ApplicationContext):
 
 
 @create.command()
+@command_streaming()
 async def game_pass_alert(ctx: discord.ApplicationContext):
     """Create a Xbox Game Pass alert."""
     GamePassAlerts.add_alert(ctx)
@@ -53,6 +56,7 @@ async def game_pass_alert(ctx: discord.ApplicationContext):
     autocomplete=game_autocomplete_options,
     description="Choose a game title.",
 )
+@command_streaming()
 async def price_alert(ctx: discord.ApplicationContext, game_name):
     """Create a game price alert."""
     await price_lookup_response(ctx, game_name)
@@ -64,6 +68,7 @@ async def price_alert(ctx: discord.ApplicationContext, game_name):
     autocomplete=game_autocomplete_options,
     description="Choose a game title.",
 )
+@command_streaming()
 async def price_lookup(ctx: discord.ApplicationContext, game_name):
     """Look up a game price."""
     await price_lookup_response(ctx, game_name)
@@ -71,6 +76,7 @@ async def price_lookup(ctx: discord.ApplicationContext, game_name):
 
 @bot.slash_command()
 @commands.is_owner()
+@command_streaming()
 async def check_logs(ctx: discord.ApplicationContext):
     await ctx.respond(Logs.latest_str(), ephemeral=True)
 
@@ -86,6 +92,7 @@ async def check_logs(ctx: discord.ApplicationContext):
         "Delete Price Alert",
     ],
 )
+@command_streaming()
 async def delete_alerts(ctx: discord.ApplicationContext, type: str):
     """Delete active alerts in your server."""
     if "Giveaway" in type:
@@ -116,6 +123,7 @@ def alert_channel_str(alerts: list) -> str:
 
 
 @bot.slash_command()
+@command_streaming()
 async def check_alerts(ctx: discord.ApplicationContext):
     """See all active alerts on your server."""
     alert_names = [
