@@ -1,5 +1,14 @@
 <p align="center"><img src="https://user-images.githubusercontent.com/89750679/214477390-951d28bd-cc65-44bd-b669-6c7d77f746bd.png" alt="Game Deals Logo" width="200"/></p>
 
+<p align="center">
+<a href="https://top.gg/bot/1028073862597967932">
+  <img src="https://top.gg/api/widget/servers/1028073862597967932.svg?noavatar=true">
+</a>
+<a href="https://top.gg/bot/1028073862597967932">
+  <img src="https://top.gg/api/widget/upvotes/1028073862597967932.svg?noavatar=true">
+</a>
+</p>
+
 # Game Deals Bot
 
 A discord bot for game deals, giveaways, and free game releases. 
