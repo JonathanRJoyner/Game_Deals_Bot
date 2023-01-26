@@ -328,9 +328,12 @@ class PriceAlerts(Base):
     async def delete_alert_dropdown(ctx: discord.ApplicationContext):
         from views import PriceAlertDropdown
 
-        dropdown = PriceAlertDropdown(PriceAlerts.get_alerts(ctx.guild.id))
-        view = discord.ui.View(dropdown)
-        await ctx.respond(view=view)
+        try:
+            dropdown = PriceAlertDropdown(PriceAlerts.get_alerts(ctx.guild.id))
+            view = discord.ui.View(dropdown)
+            await ctx.respond(view=view)
+        except:
+            await ctx.respond("You have no price alerts set.", ephemeral=True)
 
 
 class G2AData(Base):

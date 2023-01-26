@@ -1,6 +1,7 @@
 import discord
 from discord.commands import option
 from discord.ext import commands
+from datetime import datetime
 
 from wrappers import command_streaming
 from price import game_autocomplete_options, price_lookup_response
@@ -11,10 +12,17 @@ from alerts import (
     gamepass_alert,
     delete_server_alerts,
     price_alert,
+    update_server_count,
 )
 from models import GiveawayAlerts, FreeToPlayAlerts, GamePassAlerts, PriceAlerts, Logs
 
-alert_tasks = [freetogame_alert, gamerpower_alert, gamepass_alert, price_alert]
+alert_tasks = [
+    freetogame_alert,
+    gamerpower_alert,
+    gamepass_alert,
+    price_alert,
+    update_server_count,
+]
 
 
 @bot.event
@@ -139,6 +147,20 @@ async def check_alerts(ctx: discord.ApplicationContext):
         if alerts:
             embed.add_field(name=item[1], value=alert_channel_str(alerts), inline=False)
     await ctx.respond(embed=embed)
+
+
+@bot.event
+async def on_dbl_vote(data) -> None:
+    """Sends a message to the votes channel when a user votes on the bot."""
+
+    embed = discord.Embed(title=f"Thanks for the Vote!🎉", timestamp=datetime.now())
+    channel = await bot.fetch_channel(bot.vote_channel)
+    user = await bot.get_or_fetch_user(int(data["user"]))
+    if user.avatar and user.name:
+        embed.set_author(name=user.name, icon_url=user.avatar.url)
+    user_info = f"User: <@{user.id}>\n" "Server: None"
+    embed.add_field(name="User Info", value=user_info)
+    await channel.send(embed=embed)
 
 
 bot.add_application_command(create)

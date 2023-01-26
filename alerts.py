@@ -130,3 +130,13 @@ async def freetogame_alert() -> None:
 @tasks.loop(minutes=30)
 async def gamepass_alert() -> None:
     await send_alerts(GamePassData, GamePassAlerts)
+
+
+@tasks.loop(minutes=30)
+async def update_server_count():
+    try:
+        await bot.topggpy.post_guild_count()
+        channel = await bot.fetch_channel(bot.server_count_channel)
+        await channel.edit(name=f"SERVER COUNT: {len(bot.guilds)}")
+    except:
+        pass
