@@ -14,6 +14,8 @@ from models import (
 )
 import traceback
 
+from bot import bot
+
 ITAD_API = os.getenv("ITAD_API")
 
 
@@ -107,20 +109,11 @@ async def price_lookup_response(ctx: discord.ApplicationContext, game_name: str)
 
     await ctx.response.defer()
     game_name = get_closest_names(game_name)[0]
-    try:
-        game_plain = await fetch_itad_game_plain(game_name)
-        info = await PriceInfo.create_one(game_plain)
-        embed = info.info_embed()
-        view = CreateAlertView(info)
-        await ctx.respond(embed=embed, view=view)
-    except:
-        print(traceback.format_exc())
-        response = (
-            "It looks like there was an issue getting that games price "
-            "data. The error has been sent to the support server."
-        )
-        await ctx.respond(response)
-
+    game_plain = await fetch_itad_game_plain(game_name)
+    info = await PriceInfo.create_one(game_plain)
+    embed = info.info_embed()
+    view = CreateAlertView(info)
+    await ctx.respond(embed=embed, view=view)
 
 async def get_itad_overviews(plains: list[str]) -> dict:
     """Creates a dict where all input game plains are keys. Used to check
