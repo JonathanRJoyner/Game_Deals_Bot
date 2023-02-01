@@ -82,7 +82,7 @@ async def price_lookup(ctx: discord.ApplicationContext, game_name):
     await price_lookup_response(ctx, game_name)
 
 
-@bot.slash_command()
+@bot.slash_command(guild_ids = bot.support_server)
 @commands.is_owner()
 @command_streaming()
 async def check_logs(ctx: discord.ApplicationContext):
