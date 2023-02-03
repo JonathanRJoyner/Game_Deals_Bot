@@ -108,8 +108,9 @@ async def check_logs(ctx: discord.ApplicationContext):
 @command_streaming()
 async def giveaway_creation(ctx: discord.ApplicationContext, app_id: str, key: str):
     LocalGiveaways.add_giveaway(app_id, key)
-    votes = await bot.topggpy.get_bot_votes()
-    print(votes)
+    await ctx.respond('Giveaway Created', ephemeral = True)
+    #votes = await bot.topggpy.get_bot_votes()
+    #print(votes)
 
 
 @bot.slash_command()
