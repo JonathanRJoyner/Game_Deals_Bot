@@ -1,3 +1,4 @@
+import asyncio
 from discord.ext import tasks
 from sqlalchemy import select, update, delete
 from models import (
@@ -9,11 +10,13 @@ from models import (
     GamePassAlerts,
     GamePassData,
     PriceAlerts,
+    LocalGiveaways,
 )
 from typing import Union
 
 from bot import bot
 from price import price_comparison, get_itad_overviews, PriceInfo
+from views import VoteButton
 
 alert_tables = [FreeToPlayAlerts, GiveawayAlerts, GamePassAlerts, PriceAlerts]
 
@@ -54,20 +57,24 @@ def delete_inactive_channel(channel_id: int) -> None:
             session.commit()
 
 
-async def send_alerts(data_table, alert_table) -> None:
+async def send_alerts(data_table, alert_table, view=None) -> None:
     """Takes the active alerts in the data table and sends them to the
     channels in the alert table."""
     channels = get_alert_channels(alert_table)
     alerts = get_unalerted_rows(data_table)
     for item in alerts:
-        embed = item.alert_embed()
+        if asyncio.iscoroutinefunction(item.alert_embed):
+            embed = await item.alert_embed()
+        else:
+            embed = item.alert_embed()
         for channel_id in channels:
             try:
                 channel = await bot.fetch_channel(channel_id)
-                await channel.send(embed=embed)
+                await channel.send(embed=embed, view=view)
             except Exception as exc:
-                print(exc)
-                delete_inactive_channel(channel_id)
+                print(f"{exc}: {channel_id}")
+                if not bot.debug_guilds:
+                    delete_inactive_channel(channel_id)
     update_alert_status(data_table)
 
 
@@ -130,6 +137,11 @@ async def freetogame_alert() -> None:
 @tasks.loop(minutes=30)
 async def gamepass_alert() -> None:
     await send_alerts(GamePassData, GamePassAlerts)
+
+
+@tasks.loop(minutes=30)
+async def local_giveaway_alert() -> None:
+    await send_alerts(LocalGiveaways, GiveawayAlerts, view=VoteButton())
 
 
 @tasks.loop(minutes=30)

@@ -1,7 +1,6 @@
 import discord
 from price import PriceInfo
 from models import PriceAlerts
-from alerts import delete_server_alerts
 import json
 
 
@@ -76,6 +75,8 @@ class PriceAlertDropdown(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        from alerts import delete_server_alerts
+
         alert = json.loads(self.values[0])
         game_name = alert["game_name"]
         channel = alert["channel"]
@@ -89,3 +90,9 @@ class PriceAlertDropdown(discord.ui.Select):
         )
         response = f"Price alert deleted."
         await interaction.response.send_message(response)
+
+
+class VoteButton(discord.ui.View):
+    def __init__(self):
+        url = "https://top.gg/bot/1028073862597967932/vote"
+        super().__init__(discord.ui.Button(label="Vote to Enter", url=url))

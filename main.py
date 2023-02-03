@@ -13,8 +13,16 @@ from alerts import (
     delete_server_alerts,
     price_alert,
     update_server_count,
+    local_giveaway_alert,
 )
-from models import GiveawayAlerts, FreeToPlayAlerts, GamePassAlerts, PriceAlerts, Logs
+from models import (
+    GiveawayAlerts,
+    FreeToPlayAlerts,
+    GamePassAlerts,
+    PriceAlerts,
+    Logs,
+    LocalGiveaways,
+)
 
 alert_tasks = [
     freetogame_alert,
@@ -22,6 +30,7 @@ alert_tasks = [
     gamepass_alert,
     price_alert,
     update_server_count,
+    local_giveaway_alert
 ]
 
 
@@ -82,11 +91,25 @@ async def price_lookup(ctx: discord.ApplicationContext, game_name):
     await price_lookup_response(ctx, game_name)
 
 
-@bot.slash_command(guild_ids = bot.support_server)
+@bot.slash_command(guild_ids=bot.support_server)
 @commands.is_owner()
 @command_streaming()
 async def check_logs(ctx: discord.ApplicationContext):
     await ctx.respond(Logs.latest_str(), ephemeral=True)
+
+
+@bot.slash_command(guild_ids=bot.support_server)
+@commands.is_owner()
+@discord.option(
+    name="app_id",
+    description="Input a steam app id",
+)
+@discord.option(name="Key", description="Key for the game")
+@command_streaming()
+async def giveaway_creation(ctx: discord.ApplicationContext, app_id: str, key: str):
+    LocalGiveaways.add_giveaway(app_id, key)
+    votes = await bot.topggpy.get_bot_votes()
+    print(votes)
 
 
 @bot.slash_command()

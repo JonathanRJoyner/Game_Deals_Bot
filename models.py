@@ -13,7 +13,7 @@ from sqlalchemy import (
 )
 import discord
 from sqlalchemy.orm import declarative_base, sessionmaker
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 from typing import Union
 
@@ -36,7 +36,7 @@ def embed_listed_field(name: str, values: Union[dict, str]) -> discord.EmbedFiel
     else:
         content = []
         for key, value in values.items():
-            if "](" not in value:
+            if ("](" not in value) and ("<t:" not in value):
                 content.append(f"{key}: `{value}`")
             else:
                 content.append(f"{key}: {value}")
@@ -91,7 +91,7 @@ class GamerPowerData(Base):
             "Offer Ends": self.end_date,
             "Link": f"[GamerPower.com]({self.open_giveaway})",
         }
-        embed.append_field(embed_listed_field("__Giveaway Info__", info_values))
+        embed.append_field(embed_listed_field("Giveaway Info", info_values))
         embed.append_field(embed_listed_field("Description", self.description))
         embed.append_field(embed_cta())
         embed.set_image(url=self.image)
@@ -353,6 +353,59 @@ class SteamApps(Base):
 
     appid = Column(Integer, primary_key=True)
     name = Column(String)
+
+
+class LocalGiveaways(Base):
+    __tablename__ = "local_giveaways"
+
+    id = Column(Integer, primary_key=True)
+    appid = Column(Integer)
+    key = Column(String)
+    creation_time = Column(DateTime)
+    end_time = Column(DateTime)
+    winner = Column(BIGINT)
+    alerted = Column(Boolean, default=False)
+
+    @staticmethod
+    def add_giveaway(appid: int, key: str):
+        giveaway = LocalGiveaways(
+            appid=appid,
+            key=key,
+            creation_time=datetime.now(),
+            end_time=datetime.now() + timedelta(days=7),
+        )
+        with Session() as session:
+            session.add(giveaway)
+            session.commit()
+
+    async def alert_embed(self):
+        from price import fetch_steam_app_details, fetch_steam_app_reviews
+
+        info = await fetch_steam_app_details(self.appid)
+        review = await fetch_steam_app_reviews(self.appid)
+        info = info[str(self.appid)]["data"]
+        embed = discord.Embed(
+            title=f"Giveaway: {info['name']}", timestamp=datetime.now()
+        )
+        info_values = {
+            "Giveaway Ends": f"<t:{int(self.end_time.timestamp())}:R>",
+            "Game Price": info["price_overview"]["final_formatted"],
+            "Release Date": info["release_date"]["date"],
+            "Reviews": review["query_summary"]["review_score_desc"],
+            "Steam Page": f"[Link](https://store.steampowered.com/app/{self.appid}/)",
+        }
+        description = (
+            "- [Vote on Top.gg](https://top.gg/bot/1028073862597967932/vote)\n"
+            "- Increase your chances by voting often.\n"
+            "- Votes are reset each month.\n"
+        )
+        embed.append_field(embed_listed_field("Giveaway Info", info_values))
+        embed.append_field(embed_listed_field("How to Win", description))
+        embed.append_field(embed_cta())
+        embed.set_image(url=info["header_image"])
+        embed.set_thumbnail(url="https://i.imgur.com/CnFIoS3.png")
+        embed.color = alert_color
+        return embed
 
 
 class Logs(Base):

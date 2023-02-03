@@ -64,6 +64,14 @@ async def fetch_steam_app_details(app_ids: Union[int, list[int]]) -> dict:
     return await api_call(url, params)
 
 
+async def fetch_steam_app_reviews(app_id: int) -> dict:
+    """Fetches first page of app reviews from steam.
+    Used for showing game info to users."""
+    url = f"https://store.steampowered.com/appreviews/{app_id}"
+    params = {"json": 1, "language": "english"}
+    return await api_call(url, params)
+
+
 async def get_steam_image(game_name: str) -> str:
     game_name = get_closest_names(game_name)[0]
     with Session() as session:
@@ -109,12 +117,13 @@ async def price_lookup_response(ctx: discord.ApplicationContext, game_name: str)
 
     await ctx.response.defer()
     game_name = get_closest_names(game_name)[0]
-    game_name = re.sub('[^A-Za-z0-9 ]+', '', game_name)
+    game_name = re.sub("[^A-Za-z0-9 ]+", "", game_name)
     game_plain = await fetch_itad_game_plain(game_name)
     info = await PriceInfo.create_one(game_plain)
     embed = info.info_embed()
     view = CreateAlertView(info)
     await ctx.respond(embed=embed, view=view)
+
 
 async def get_itad_overviews(plains: list[str]) -> dict:
     """Creates a dict where all input game plains are keys. Used to check
