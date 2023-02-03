@@ -13,6 +13,7 @@ from models import (
     LocalGiveaways,
 )
 from typing import Union
+import traceback
 
 from bot import bot
 from price import price_comparison, get_itad_overviews, PriceInfo
@@ -151,4 +152,6 @@ async def update_server_count():
         channel = await bot.fetch_channel(bot.server_count_channel)
         await channel.edit(name=f"SERVER COUNT: {len(bot.guilds)}")
     except:
-        pass
+        exc_string = f"```{traceback.format_exc()[-1500:]}```"
+        channel = await bot.fetch_channel(bot.exception_channel)
+        await channel.send(exc_string)
