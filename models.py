@@ -387,10 +387,8 @@ class LocalGiveaways(Base):
         embed = discord.Embed(
             title=f"Giveaway: {info['name']}", timestamp=datetime.now()
         )
-        info_values = {
-            "Giveaway Ends": f"<t:{int(self.end_time.timestamp())}:R>",
-            "Game Price": info["price_overview"]["final_formatted"],
-            "Release Date": info["release_date"]["date"],
+        game_details = {
+            "Price": info["price_overview"]["final_formatted"],
             "Reviews": review["query_summary"]["review_score_desc"],
             "Steam Page": f"[Link](https://store.steampowered.com/app/{self.appid}/)",
         }
@@ -398,8 +396,9 @@ class LocalGiveaways(Base):
             "- [Vote on Top.gg](https://top.gg/bot/1028073862597967932/vote)\n"
             "- Increase your chances by voting often.\n"
             "- Votes are reset each month.\n"
+            f"- Winner receives Steam key via DM <t:{int(self.end_time.timestamp())}:R>\n"
         )
-        embed.append_field(embed_listed_field("Giveaway Info", info_values))
+        embed.append_field(embed_listed_field("Game Info", game_details))
         embed.append_field(embed_listed_field("How to Win", description))
         embed.append_field(embed_cta())
         embed.set_image(url=info["header_image"])
