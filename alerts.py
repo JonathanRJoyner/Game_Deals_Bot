@@ -72,8 +72,10 @@ async def send_alerts(data_table, alert_table, view=None) -> None:
             try:
                 channel = await bot.fetch_channel(channel_id)
                 await channel.send(embed=embed, view=view)
-            except Exception as exc:
-                print(f"{exc}: {channel_id}")
+            except:
+                channel = await bot.fetch_channel(bot.exception_channel)
+                exc_string = f"```{traceback.format_exc()[-1500:]}```"
+                await channel.send(f'Send Alerts Error: {exc_string}')
                 if not bot.debug_guilds:
                     delete_inactive_channel(channel_id)
     update_alert_status(data_table)
