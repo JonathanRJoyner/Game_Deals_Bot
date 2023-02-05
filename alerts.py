@@ -1,6 +1,6 @@
 import asyncio
 from discord.ext import tasks
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, update, delete, and_
 from models import (
     Session,
     GamerPowerData,
@@ -11,9 +11,12 @@ from models import (
     GamePassData,
     PriceAlerts,
     LocalGiveaways,
+    SteamFreeGamesCalendar,
 )
 from typing import Union
 import traceback
+from datetime import datetime
+from sqlalchemy.inspection import inspect
 
 from bot import bot
 from price import price_comparison, get_itad_overviews, PriceInfo
@@ -58,11 +61,12 @@ def delete_inactive_channel(channel_id: int) -> None:
             session.commit()
 
 
-async def send_alerts(data_table, alert_table, view=None) -> None:
+async def send_alerts(data_table, alert_table, view=None, alerts=None) -> None:
     """Takes the active alerts in the data table and sends them to the
     channels in the alert table."""
     channels = get_alert_channels(alert_table)
-    alerts = get_unalerted_rows(data_table)
+    if alerts == None:
+        alerts = get_unalerted_rows(data_table)
     for item in alerts:
         if asyncio.iscoroutinefunction(item.alert_embed):
             embed = await item.alert_embed()
@@ -75,10 +79,10 @@ async def send_alerts(data_table, alert_table, view=None) -> None:
             except:
                 channel = await bot.fetch_channel(bot.exception_channel)
                 exc_string = f"```{traceback.format_exc()[-1500:]}```"
-                await channel.send(f'Send Alerts Error: {exc_string}')
+                await channel.send(f"Send Alerts Error: {exc_string}")
                 if not bot.debug_guilds:
                     delete_inactive_channel(channel_id)
-    update_alert_status(data_table)
+        update_alert_status(data_table, item)
 
 
 def get_alert_channels(table) -> list[int]:
@@ -98,11 +102,12 @@ def get_unalerted_rows(table) -> list:
     return alerts
 
 
-def update_alert_status(table) -> None:
-    """Changes all alerted statuses to True.
+def update_alert_status(table, item) -> None:
+    """Changes the alert status to True for a given row.
     This is used after sending alerts."""
     with Session() as session:
-        stmt = update(table).values(alerted=True)
+        stmt = update(table).values(alerted=True).where(table.id == item.id)
+        print(stmt)
         session.execute(stmt)
         session.commit()
 
@@ -111,6 +116,23 @@ async def send_price_alert(alert: PriceAlerts, overviews: dict) -> None:
     embed = PriceInfo.alert_embed(alert, overviews[alert.game_plain])
     channel = await bot.fetch_channel(alert.channel)
     await channel.send(embed=embed)
+
+
+@tasks.loop(hours=2)
+async def steam_free_release_alert():
+    """Gets all free games released since the last run and sends
+    alerts to the free game alerts channels."""
+
+    with Session() as session:
+        new_releases = select(SteamFreeGamesCalendar)
+        new_releases = new_releases.where(
+            and_(
+                SteamFreeGamesCalendar.release_date < datetime.now(),
+                SteamFreeGamesCalendar.alerted == False,
+            )
+        )
+        alerts = session.execute(new_releases).scalars().all()
+        await send_alerts(SteamFreeGamesCalendar, FreeToPlayAlerts, alerts=alerts)
 
 
 @tasks.loop(hours=4)

@@ -14,6 +14,7 @@ from alerts import (
     price_alert,
     update_server_count,
     local_giveaway_alert,
+    steam_free_release_alert,
 )
 from models import (
     GiveawayAlerts,
@@ -30,7 +31,8 @@ alert_tasks = [
     gamepass_alert,
     price_alert,
     update_server_count,
-    local_giveaway_alert
+    local_giveaway_alert,
+    steam_free_release_alert
 ]
 
 

@@ -407,6 +407,33 @@ class LocalGiveaways(Base):
         return embed
 
 
+class SteamFreeGamesCalendar(Base):
+    __tablename__ = "steam_free_games_calendar"
+
+    id = Column(Integer, primary_key=True)
+    release_date = Column(DateTime)
+    alerted = Column(Boolean, default=False)
+
+    async def alert_embed(self):
+        from price import fetch_steam_app_details
+
+        info = await fetch_steam_app_details(self.id)
+        info = info[str(self.id)]["data"]
+        embed = discord.Embed(
+            title=f"F2P Game Release: {info['name']}", timestamp=datetime.now()
+        )
+        game_details = {
+            "Price": "Free",
+            "Steam Page": f"[Link](https://store.steampowered.com/app/{self.id}/)",
+        }
+        embed.append_field(embed_listed_field("Game Info", game_details))
+        embed.append_field(embed_listed_field("Description", info["short_description"]))
+        embed.append_field(embed_cta())
+        embed.set_image(url=info["header_image"])
+        embed.color = alert_color
+        return embed
+
+
 class Logs(Base):
     __tablename__ = "logs"
 
