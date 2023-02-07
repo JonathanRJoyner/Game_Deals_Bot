@@ -185,7 +185,7 @@ class FreeToGameData(Base):
     def alert_embed(self) -> discord.Embed:
         """Creates an alert embed which can be sent to discord channels."""
         embed = discord.Embed(
-            title=f"New F2P Game: {self.title}", timestamp=datetime.now()
+            title=f"F2P MMO Release: {self.title}", timestamp=datetime.now()
         )
         info_values = {
             "Genre": self.genre,

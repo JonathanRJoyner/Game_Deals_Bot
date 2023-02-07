@@ -117,7 +117,7 @@ async def price_lookup_response(ctx: discord.ApplicationContext, game_name: str)
 
     await ctx.response.defer()
     game_name = get_closest_names(game_name)[0]
-    game_name = re.sub("[^A-Za-z0-9 ]+", "", game_name)
+    game_name = re.sub("[^A-Za-z0-9- ]+", "", game_name)
     game_plain = await fetch_itad_game_plain(game_name)
     info = await PriceInfo.create_one(game_plain)
     embed = info.info_embed()
