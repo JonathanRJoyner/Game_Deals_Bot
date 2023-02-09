@@ -15,6 +15,7 @@ from alerts import (
     update_server_count,
     local_giveaway_alert,
     steam_free_release_alert,
+    update_local_giveaways
 )
 from models import (
     GiveawayAlerts,
@@ -26,13 +27,14 @@ from models import (
 )
 
 alert_tasks = [
-    freetogame_alert,
-    gamerpower_alert,
-    gamepass_alert,
-    price_alert,
-    update_server_count,
-    local_giveaway_alert,
-    steam_free_release_alert
+    #freetogame_alert,
+    #gamerpower_alert,
+    #gamepass_alert,
+    #price_alert,
+    #update_server_count,
+    #local_giveaway_alert,
+    #steam_free_release_alert,
+    update_local_giveaways
 ]
 
 
@@ -111,8 +113,6 @@ async def check_logs(ctx: discord.ApplicationContext):
 async def giveaway_creation(ctx: discord.ApplicationContext, app_id: str, key: str):
     LocalGiveaways.add_giveaway(app_id, key)
     await ctx.respond("Giveaway Created", ephemeral=True)
-    # votes = await bot.topggpy.get_bot_votes()
-    # print(votes)
 
 
 @bot.slash_command()

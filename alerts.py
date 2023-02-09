@@ -17,6 +17,7 @@ from typing import Union
 import traceback
 from datetime import datetime
 from sqlalchemy.inspection import inspect
+import random
 
 from bot import bot
 from price import price_comparison, get_itad_overviews, PriceInfo
@@ -179,3 +180,27 @@ async def update_server_count():
         exc_string = f"```{traceback.format_exc()[-1500:]}```"
         channel = await bot.fetch_channel(bot.exception_channel)
         await channel.send(exc_string)
+
+@tasks.loop(minutes = 30)
+async def update_local_giveaways():
+    with Session() as session:
+        stmt = select(LocalGiveaways).where(
+            and_(LocalGiveaways.end_time <= datetime.now(), 
+                 LocalGiveaways.winner == None)
+        )
+        giveaway = session.execute(stmt).scalars().all()
+        giveaway = giveaway[0]
+    votes = await bot.topggpy.get_bot_votes()
+    voter_ids = [voter['id'] for voter in votes]
+    winner = random.choice(voter_ids)
+    user = await bot.get_or_fetch_user(180131235882991616)
+    message = (
+        "Thanks for voting! You've won our giveaway!\n"
+        f"Steam key: {giveaway.key}"
+    )
+    await user.send(message, embed = await giveaway.alert_embed())
+    with Session() as session:
+        stmt = update(LocalGiveaways).where(LocalGiveaways.id == giveaway.id).values(winner = winner)
+        session.execute(stmt)
+        session.commit()
+
