@@ -193,14 +193,19 @@ async def update_local_giveaways():
     votes = await bot.topggpy.get_bot_votes()
     voter_ids = [voter['id'] for voter in votes]
     winner = random.choice(voter_ids)
-    user = await bot.get_or_fetch_user(winner)
-    message = (
-        "Thanks for voting! You've won our giveaway!\n"
-        f"Steam key: {giveaway.key}"
-    )
-    await user.send(message, embed = await giveaway.alert_embed())
-    with Session() as session:
-        stmt = update(LocalGiveaways).where(LocalGiveaways.id == giveaway.id).values(winner = winner)
-        session.execute(stmt)
-        session.commit()
+    try:
+        user = await bot.get_or_fetch_user(winner)
+        message = (
+            "Thanks for voting! You've won our giveaway!\n"
+            f"Steam key: {giveaway.key}"
+        )
+        await user.send(message, embed = await giveaway.alert_embed())
+        with Session() as session:
+            stmt = update(LocalGiveaways).where(LocalGiveaways.id == giveaway.id).values(winner = winner)
+            session.execute(stmt)
+            session.commit()
+    except:
+        channel = await bot.fetch_channel(bot.exception_channel)
+        exc_string = f"```{traceback.format_exc()[-1500:]}```"
+        await channel.send(f'Giveaway error:\n{exc_string}')
 
