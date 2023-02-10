@@ -193,7 +193,7 @@ async def update_local_giveaways():
     votes = await bot.topggpy.get_bot_votes()
     voter_ids = [voter['id'] for voter in votes]
     winner = random.choice(voter_ids)
-    user = await bot.get_or_fetch_user(180131235882991616)
+    user = await bot.get_or_fetch_user(winner)
     message = (
         "Thanks for voting! You've won our giveaway!\n"
         f"Steam key: {giveaway.key}"
