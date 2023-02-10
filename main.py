@@ -27,13 +27,13 @@ from models import (
 )
 
 alert_tasks = [
-    #freetogame_alert,
-    #gamerpower_alert,
-    #gamepass_alert,
-    #price_alert,
-    #update_server_count,
-    #local_giveaway_alert,
-    #steam_free_release_alert,
+    freetogame_alert,
+    gamerpower_alert,
+    gamepass_alert,
+    price_alert,
+    update_server_count,
+    local_giveaway_alert,
+    steam_free_release_alert,
     update_local_giveaways
 ]
 
