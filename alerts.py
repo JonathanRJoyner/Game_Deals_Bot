@@ -172,6 +172,8 @@ async def local_giveaway_alert() -> None:
 
 @tasks.loop(minutes=30)
 async def update_server_count():
+    """Updates the server count in the guild channel and on top.gg"""
+
     try:
         await bot.topggpy.post_guild_count()
         channel = await bot.fetch_channel(bot.server_count_channel)
@@ -181,31 +183,38 @@ async def update_server_count():
         channel = await bot.fetch_channel(bot.exception_channel)
         await channel.send(exc_string)
 
-@tasks.loop(minutes = 30)
+
+@tasks.loop(minutes=30)
 async def update_local_giveaways():
+    """Assigns a winner to giveaways that have ended. Sends the winner a
+    DM with the steam key and updates the entry in the database."""
+
     with Session() as session:
         stmt = select(LocalGiveaways).where(
-            and_(LocalGiveaways.end_time <= datetime.now(), 
-                 LocalGiveaways.winner == None)
+            and_(
+                LocalGiveaways.end_time <= datetime.now(), LocalGiveaways.winner == None
+            )
         )
         giveaway = session.execute(stmt).scalars().all()
         giveaway = giveaway[0]
     votes = await bot.topggpy.get_bot_votes()
-    voter_ids = [voter['id'] for voter in votes]
+    voter_ids = [voter["id"] for voter in votes]
     winner = random.choice(voter_ids)
     try:
         user = await bot.get_or_fetch_user(winner)
         message = (
-            "Thanks for voting! You've won our giveaway!\n"
-            f"Steam key: {giveaway.key}"
+            "Thanks for voting! You've won our giveaway!\n" f"Steam key: {giveaway.key}"
         )
-        await user.send(message, embed = await giveaway.alert_embed())
+        await user.send(message, embed=await giveaway.alert_embed())
         with Session() as session:
-            stmt = update(LocalGiveaways).where(LocalGiveaways.id == giveaway.id).values(winner = winner)
+            stmt = (
+                update(LocalGiveaways)
+                .where(LocalGiveaways.id == giveaway.id)
+                .values(winner=winner)
+            )
             session.execute(stmt)
             session.commit()
     except:
         channel = await bot.fetch_channel(bot.exception_channel)
         exc_string = f"```{traceback.format_exc()[-1500:]}```"
-        await channel.send(f'Giveaway error:\n{exc_string}')
-
+        await channel.send(f"Giveaway error:\n{exc_string}")

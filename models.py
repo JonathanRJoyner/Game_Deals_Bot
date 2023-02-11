@@ -434,6 +434,41 @@ class SteamFreeGamesCalendar(Base):
         return embed
 
 
+class UpcomingSteamSales(Base):
+    __tablename__ = "upcoming_steam_sales"
+
+    id = Column(Integer, primary_key=True)
+    title = Column(String)
+    start = Column(DateTime)
+    end = Column(DateTime)
+    image = Column(String)
+    link = Column(String)
+    alerted = Column(Boolean, default=False)
+
+    async def info_embed(self):
+        embed = discord.Embed(title=f"Upcoming Steam Sales", timestamp=datetime.now())
+        start_date = self.start.strftime("%b %-d")
+        end_date = self.end.strftime("%b %-d")
+        sale_details = {
+            "Title": self.title,
+            "Starts": f"`{start_date}` (<t:{int(self.start.timestamp())}:R>)",
+            "Ends": f"`{end_date}` (<t:{int(self.end.timestamp())}:R>)",
+            "Link": f"[Steam]({self.link})",
+        }
+        embed.append_field(embed_listed_field("Sale Info", sale_details))
+        embed.append_field(embed_cta())
+        if self.image:
+            embed.set_image(url=self.image)
+        return embed
+
+    @staticmethod
+    async def all_sales_embeds():
+        with Session() as session:
+            sales = session.execute(select(UpcomingSteamSales)).scalars().all()
+        embeds = [await sale.info_embed() for sale in sales]
+        return embeds
+
+
 class Logs(Base):
     __tablename__ = "logs"
 

@@ -2,6 +2,7 @@ import discord
 from discord.commands import option
 from discord.ext import commands
 from datetime import datetime
+from discord.ext import pages
 
 from wrappers import command_streaming
 from price import game_autocomplete_options, price_lookup_response
@@ -15,7 +16,7 @@ from alerts import (
     update_server_count,
     local_giveaway_alert,
     steam_free_release_alert,
-    update_local_giveaways
+    update_local_giveaways,
 )
 from models import (
     GiveawayAlerts,
@@ -24,6 +25,7 @@ from models import (
     PriceAlerts,
     Logs,
     LocalGiveaways,
+    UpcomingSteamSales,
 )
 
 alert_tasks = [
@@ -173,6 +175,14 @@ async def check_alerts(ctx: discord.ApplicationContext):
         if alerts:
             embed.add_field(name=item[1], value=alert_channel_str(alerts), inline=False)
     await ctx.respond(embed=embed)
+
+
+@bot.slash_command()
+@command_streaming()
+async def upcoming_steam_sales(ctx: discord.ApplicationContext):
+    """See all upcoming steam sales."""
+    paginator = pages.Paginator(pages=await UpcomingSteamSales.all_sales_embeds())
+    await paginator.respond(ctx.interaction, ephemeral=False)
 
 
 @bot.event
