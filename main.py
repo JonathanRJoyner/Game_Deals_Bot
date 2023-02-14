@@ -111,7 +111,6 @@ async def check_logs(ctx: discord.ApplicationContext):
     description="Input a steam app id",
 )
 @discord.option(name="Key", description="Key for the game")
-@command_streaming()
 async def giveaway_creation(ctx: discord.ApplicationContext, app_id: str, key: str):
     LocalGiveaways.add_giveaway(app_id, key)
     await ctx.respond("Giveaway Created", ephemeral=True)

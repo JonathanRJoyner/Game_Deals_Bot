@@ -86,8 +86,8 @@ def get_closest_names(game_str: str) -> list[str]:
     Returns the 20 closest matches."""
     with Session() as session:
         stmt = f"""SELECT name FROM steam_apps
-            WHERE name % '{game_str}'
-            ORDER BY name <-> '{game_str}'
+            WHERE name % "{game_str}"
+            ORDER BY name <-> "{game_str}"
             LIMIT 20;"""
         return session.execute(stmt).scalars().all()
 
