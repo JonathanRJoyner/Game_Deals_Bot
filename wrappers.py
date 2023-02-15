@@ -53,6 +53,8 @@ def alert_check():
             else:
                 interaction = args[2]
             
+            interaction.response.defer()
+            
             alert_count = server_alert_count(interaction.guild.id)
             if alert_count >= 10:
                 response = (

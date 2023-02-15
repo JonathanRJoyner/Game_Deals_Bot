@@ -11,7 +11,6 @@ class CreateAlertView(discord.ui.View):
         self.info = info
 
     @discord.ui.button(label="Create Alert", style=discord.ButtonStyle.red)
-    @alert_check()
     async def alert_button(
         self, button: discord.ui.Button, interaction: discord.Interaction
     ):
