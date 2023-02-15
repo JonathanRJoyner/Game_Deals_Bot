@@ -21,10 +21,18 @@ import random
 
 from bot import bot
 from price import price_comparison, get_itad_overviews, PriceInfo
-from views import VoteButton
 
 alert_tables = [FreeToPlayAlerts, GiveawayAlerts, GamePassAlerts, PriceAlerts]
 
+
+def server_alert_count(server_id: int) -> int:
+    count = 0
+    with Session() as session:
+        for alert in alert_tables:
+            stmt = select(alert).where(alert.server == server_id)
+            result = session.execute(stmt).scalars().all()
+            count += len(result)
+    return count
 
 def delete_server_alerts(
     server_id: int,
@@ -167,6 +175,7 @@ async def gamepass_alert() -> None:
 
 @tasks.loop(minutes=30)
 async def local_giveaway_alert() -> None:
+    from views import VoteButton
     await send_alerts(LocalGiveaways, GiveawayAlerts, view=VoteButton())
 
 

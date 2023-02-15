@@ -4,7 +4,7 @@ from discord.ext import commands
 from datetime import datetime
 from discord.ext import pages
 
-from wrappers import command_streaming
+from wrappers import command_streaming, alert_check
 from price import game_autocomplete_options, price_lookup_response
 from bot import bot, DISCORD_TOKEN
 from alerts import (
@@ -51,6 +51,7 @@ create = discord.SlashCommandGroup("create", "Alert creation commands")
 
 @create.command()
 @command_streaming()
+@alert_check()
 async def giveaway_alert(ctx: discord.ApplicationContext):
     """Create a Giveaway alert."""
     GiveawayAlerts.add_alert(ctx)
@@ -59,6 +60,7 @@ async def giveaway_alert(ctx: discord.ApplicationContext):
 
 @create.command()
 @command_streaming()
+@alert_check()
 async def f2p_alert(ctx: discord.ApplicationContext):
     """Create a free to play alert."""
     FreeToPlayAlerts.add_alert(ctx)
@@ -67,6 +69,7 @@ async def f2p_alert(ctx: discord.ApplicationContext):
 
 @create.command()
 @command_streaming()
+@alert_check()
 async def game_pass_alert(ctx: discord.ApplicationContext):
     """Create a Xbox Game Pass alert."""
     GamePassAlerts.add_alert(ctx)
@@ -80,6 +83,7 @@ async def game_pass_alert(ctx: discord.ApplicationContext):
     description="Choose a game title.",
 )
 @command_streaming()
+@alert_check()
 async def price_alert(ctx: discord.ApplicationContext, game_name):
     """Create a game price alert."""
     await price_lookup_response(ctx, game_name)

@@ -4,6 +4,7 @@ from datetime import datetime
 import traceback
 
 from bot import bot
+from alerts import server_alert_count
 
 
 def command_streaming():
@@ -39,4 +40,37 @@ def command_streaming():
 
         return wrapped
 
+    return wrapper
+
+
+def alert_check():
+    def wrapper(func):
+        @functools.wraps(func)
+        async def wrapped(*args, **kwargs):
+            
+            if type(args[0]) == discord.commands.context.ApplicationContext:
+                interaction = args[0]
+            else:
+                interaction = args[2]
+            
+            alert_count = server_alert_count(interaction.guild.id)
+            if alert_count >= 10:
+                response = (
+                    "You've reached the maximum allowed alerts for this server."
+                    "Please delete an alert to set a new one."
+                )
+                await interaction.respond(response, ephemeral = True)
+                return None
+            
+            elif alert_count >= 5:
+                if not await bot.topggpy.get_user_vote(interaction.author.id):
+                    response = (
+                        "You've reached the alert limit for this server. "
+                        "You can increase the alert limit by [voting on Top.gg]"
+                        "(https://top.gg/bot/1028073862597967932/vote)"
+                    )
+                    await interaction.respond(response, ephemeral = True)
+                    return None
+
+        return wrapped
     return wrapper
