@@ -437,9 +437,8 @@ class SteamFreeGamesCalendar(Base):
 class UpcomingSteamSales(Base):
     __tablename__ = "upcoming_steam_sales"
 
-    id = Column(Integer, primary_key=True)
-    title = Column(String)
-    start = Column(DateTime)
+    title = Column(String, primary_key=True)
+    start = Column(DateTime, primary_key=True)
     end = Column(DateTime)
     image = Column(String)
     link = Column(String)
