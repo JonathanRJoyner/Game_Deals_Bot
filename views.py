@@ -3,7 +3,8 @@ from price import PriceInfo
 from models import PriceAlerts
 import json
 
-from wrappers import alert_check
+from alerts import alert_check
+
 
 class CreateAlertView(discord.ui.View):
     def __init__(self, info: PriceInfo):
@@ -14,8 +15,9 @@ class CreateAlertView(discord.ui.View):
     async def alert_button(
         self, button: discord.ui.Button, interaction: discord.Interaction
     ):
-        modal = CreateAlertModal(self.info)
-        await interaction.response.send_modal(modal=modal)
+        if alert_check(interaction):
+            modal = CreateAlertModal(self.info)
+            await interaction.response.send_modal(modal=modal)
 
 
 class CreateAlertModal(discord.ui.Modal):

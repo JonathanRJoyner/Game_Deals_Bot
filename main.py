@@ -4,7 +4,7 @@ from discord.ext import commands
 from datetime import datetime
 from discord.ext import pages
 
-from wrappers import command_streaming, alert_check
+from wrappers import command_streaming
 from price import game_autocomplete_options, price_lookup_response
 from bot import bot, DISCORD_TOKEN
 from alerts import (
@@ -17,6 +17,7 @@ from alerts import (
     local_giveaway_alert,
     steam_free_release_alert,
     update_local_giveaways,
+    alert_check,
 )
 from models import (
     GiveawayAlerts,
@@ -36,7 +37,7 @@ alert_tasks = [
     update_server_count,
     local_giveaway_alert,
     steam_free_release_alert,
-    update_local_giveaways
+    update_local_giveaways,
 ]
 
 
@@ -53,24 +54,27 @@ create = discord.SlashCommandGroup("create", "Alert creation commands")
 @command_streaming()
 async def giveaway_alert(ctx: discord.ApplicationContext):
     """Create a Giveaway alert."""
-    GiveawayAlerts.add_alert(ctx)
-    await ctx.respond("Giveaway alert created.")
+    if alert_check(ctx):
+        GiveawayAlerts.add_alert(ctx)
+        await ctx.respond("Giveaway alert created.")
 
 
 @create.command()
 @command_streaming()
 async def f2p_alert(ctx: discord.ApplicationContext):
     """Create a free to play alert."""
-    FreeToPlayAlerts.add_alert(ctx)
-    await ctx.respond("Free to play alert created.")
+    if alert_check(ctx):
+        FreeToPlayAlerts.add_alert(ctx)
+        await ctx.respond("Free to play alert created.")
 
 
 @create.command()
 @command_streaming()
 async def game_pass_alert(ctx: discord.ApplicationContext):
     """Create a Xbox Game Pass alert."""
-    GamePassAlerts.add_alert(ctx)
-    await ctx.respond("Game Pass alert created.")
+    if alert_check(ctx):
+        GamePassAlerts.add_alert(ctx)
+        await ctx.respond("Game Pass alert created.")
 
 
 @create.command()
