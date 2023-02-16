@@ -54,7 +54,8 @@ create = discord.SlashCommandGroup("create", "Alert creation commands")
 @command_streaming()
 async def giveaway_alert(ctx: discord.ApplicationContext):
     """Create a Giveaway alert."""
-    if alert_check(ctx):
+    alert_allowed = await alert_check(ctx)
+    if alert_allowed:
         GiveawayAlerts.add_alert(ctx)
         await ctx.respond("Giveaway alert created.")
 
@@ -63,7 +64,8 @@ async def giveaway_alert(ctx: discord.ApplicationContext):
 @command_streaming()
 async def f2p_alert(ctx: discord.ApplicationContext):
     """Create a free to play alert."""
-    if alert_check(ctx):
+    alert_allowed = await alert_check(ctx)
+    if alert_allowed:
         FreeToPlayAlerts.add_alert(ctx)
         await ctx.respond("Free to play alert created.")
 
@@ -72,7 +74,8 @@ async def f2p_alert(ctx: discord.ApplicationContext):
 @command_streaming()
 async def game_pass_alert(ctx: discord.ApplicationContext):
     """Create a Xbox Game Pass alert."""
-    if alert_check(ctx):
+    alert_allowed = await alert_check(ctx)
+    if alert_allowed:
         GamePassAlerts.add_alert(ctx)
         await ctx.respond("Game Pass alert created.")
 

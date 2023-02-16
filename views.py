@@ -15,7 +15,8 @@ class CreateAlertView(discord.ui.View):
     async def alert_button(
         self, button: discord.ui.Button, interaction: discord.Interaction
     ):
-        if alert_check(interaction):
+        alert_allowed = await alert_check(interaction)
+        if alert_allowed:
             modal = CreateAlertModal(self.info)
             await interaction.response.send_modal(modal=modal)
 
