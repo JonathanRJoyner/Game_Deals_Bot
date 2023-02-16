@@ -36,28 +36,26 @@ def server_alert_count(server_id: int) -> int:
     return count
 
 
-async def alert_check(ctx: Union[discord.Interaction, discord.ApplicationContext]):
+async def alert_check(server_id: int, user_id: int):
 
-    alert_count = server_alert_count(ctx.guild.id)
+    alert_count = server_alert_count(server_id)
 
     if alert_count >= 10:
         response = (
             "You've reached the maximum allowed alerts for this server. "
             "Please delete an alert to set a new one."
         )
-        await ctx.followup.send(response, ephemeral=True)
-        return False
+        return response
 
     elif alert_count >= 5:
-        if not await bot.topggpy.get_user_vote(ctx.user.id):
+        if not await bot.topggpy.get_user_vote(user_id):
             response = (
                 "You've reached the alert limit for this server. "
                 "You can increase the alert limit by [voting on Top.gg]"
                 "(https://top.gg/bot/1028073862597967932/vote)"
             )
-            await ctx.followup.send(response, ephemeral=True)
-            return False
-
+            return response
+    
     return True
 
 

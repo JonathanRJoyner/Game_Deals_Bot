@@ -54,30 +54,39 @@ create = discord.SlashCommandGroup("create", "Alert creation commands")
 @command_streaming()
 async def giveaway_alert(ctx: discord.ApplicationContext):
     """Create a Giveaway alert."""
-    alert_allowed = await alert_check(ctx)
-    if alert_allowed:
+    await ctx.response.defer()
+    response = await alert_check(ctx.guild.id, ctx.author.id)
+    if response == True:
         GiveawayAlerts.add_alert(ctx)
         await ctx.respond("Giveaway alert created.")
+    else:
+        await ctx.respond(response, ephemeral = True)
 
 
 @create.command()
 @command_streaming()
 async def f2p_alert(ctx: discord.ApplicationContext):
     """Create a free to play alert."""
-    alert_allowed = await alert_check(ctx)
-    if alert_allowed:
+    await ctx.response.defer()
+    response = await alert_check(ctx.guild.id, ctx.author.id)
+    if response == True:
         FreeToPlayAlerts.add_alert(ctx)
         await ctx.respond("Free to play alert created.")
+    else:
+        await ctx.respond(response, ephemeral = True)
 
 
 @create.command()
 @command_streaming()
 async def game_pass_alert(ctx: discord.ApplicationContext):
     """Create a Xbox Game Pass alert."""
-    alert_allowed = await alert_check(ctx)
-    if alert_allowed:
+    await ctx.response.defer()
+    response = await alert_check(ctx.guild.id, ctx.author.id)
+    if response == True:
         GamePassAlerts.add_alert(ctx)
         await ctx.respond("Game Pass alert created.")
+    else:
+        await ctx.respond(response, ephemeral = True)
 
 
 @create.command()

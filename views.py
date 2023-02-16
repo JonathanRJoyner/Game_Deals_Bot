@@ -15,10 +15,8 @@ class CreateAlertView(discord.ui.View):
     async def alert_button(
         self, button: discord.ui.Button, interaction: discord.Interaction
     ):
-        alert_allowed = await alert_check(interaction)
-        if alert_allowed:
-            modal = CreateAlertModal(self.info)
-            await interaction.response.send_modal(modal=modal)
+        modal = CreateAlertModal(self.info)
+        await interaction.response.send_modal(modal=modal)
 
 
 class CreateAlertModal(discord.ui.Modal):
@@ -32,21 +30,28 @@ class CreateAlertModal(discord.ui.Modal):
         self.info = info
 
     async def callback(self, interaction: discord.Interaction):
-        price = self.children[0].value.replace("$", "")
-        try:
-            price = int(float(price))
-            PriceAlerts.add_alert(
-                interaction,
-                game_name=self.info.game_name,
-                image_url=self.info.image,
-                price=price,
-                game_plain=self.info.game_plain,
-            )
-            response = f"Price Alert for `{self.info.game_name}` created."
+        
+        await interaction.response.defer()
+        response = await alert_check(interaction.guild.id, interaction.user.id)
+        if response == True:
+            price = self.children[0].value.replace("$", "")
+            try:
+                price = int(float(price))
+                PriceAlerts.add_alert(
+                    interaction,
+                    game_name=self.info.game_name,
+                    image_url=self.info.image,
+                    price=price,
+                    game_plain=self.info.game_plain,
+                )
+                response = f"Price Alert for `{self.info.game_name}` created."
+                await interaction.response.send_message(response)
+            except ValueError:
+                response = f"Target price must be a number. You input `{price}`."
+                await interaction.response.send_message(response, ephemeral=True)
+        
+        else:
             await interaction.response.send_message(response)
-        except ValueError:
-            response = f"Target price must be a number. You input `{price}`."
-            await interaction.response.send_message(response, ephemeral=True)
 
 
 class PriceAlertDropdown(discord.ui.Select):
